@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FINVIEW - 기업 재무정보 조회</title>
+<style>
+:root{
+  --bg:#f3f2ef;--surface:#fff;--ink:#16202e;--sub:#5b6676;--faint:#8b95a3;
+  --line:#e1e5ea;--line-strong:#c9d0d9;--accent:#1f4fd8;--accent-soft:#eaf0ff;--pos:#0e8a5f;--neg:#c93a3a;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-size:15px;line-height:1.6;letter-spacing:-.01em}
+a{color:inherit;text-decoration:none}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+
+/* header */
+.top{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:100}
+.top .wrap{height:64px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:800;font-size:19px;letter-spacing:.02em;color:var(--accent);cursor:pointer}
+.nav{display:flex;gap:28px;font-size:14px;color:var(--sub)}
+.nav a{padding:21px 0;border-bottom:2px solid transparent}
+.nav a.on{color:var(--ink);font-weight:600;border-color:var(--ink)}
+.nav a:hover{color:var(--ink)}
+
+/* hero + search (스크린샷 색감 반영) */
+.hero{
+  background:#f3f2ef;
+  border-bottom:1px solid var(--line);
+  padding:62px 0 54px;
+}
+.hero h1{margin:0 0 16px;font-size:34px;line-height:1.38;font-weight:700;letter-spacing:-.03em;color:#16202e}
+.hero p{margin:0 0 38px;padding:3px 0;color:var(--sub);max-width:none;white-space:nowrap;line-height:2;letter-spacing:0}
+
+/* 검색 박스 */
+.search-box{position:relative;max-width:720px}
+.search{display:flex;gap:0;border:1px solid var(--line-strong);border-radius:6px;background:#fff;}
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.search input,.search select{border:0;background:transparent;height:52px;padding:0 16px;outline:none;min-width:0}
+.search input{flex:1}
+.search select{border-left:1px solid var(--line);width:110px;cursor:pointer}
+.search button{border:0;background:#1b3a8f;color:#fff;font-weight:600;padding:0 26px;border-radius:0 5px 5px 0;cursor:pointer}
+.search button:hover{background:#173fb0}
+
+/* 추천 검색어 드롭다운 */
+.autocomplete-list{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;
+  background:#fff;border:1px solid var(--line-strong);border-radius:6px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);max-height:240px;overflow-y:auto;z-index:100;
+  display:none;margin:0;padding:4px 0;list-style:none;
+}
+.autocomplete-list li{
+  padding:10px 16px;cursor:pointer;font-size:14px;color:var(--ink);display:flex;justify-content:space-between;align-items:center;
+}
+.autocomplete-list li:hover, .autocomplete-list li.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.autocomplete-list li .stock-code{font-size:12px;color:var(--faint);font-weight:400}
+
+.quick{display:flex;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap;font-size:13px;color:var(--faint)}
+.quick button{background:rgba(0,0,0,0.05);border:1px solid var(--line-strong);border-radius:4px;padding:4px 11px;font-size:13px;color:var(--sub);cursor:pointer}
+.quick button:hover{border-color:var(--accent);color:var(--accent);background:#fff}
+#notice{display:none;margin-top:14px;max-width:720px;padding:11px 14px;border-left:3px solid var(--accent);background:var(--accent-soft);font-size:13px;color:#1b3a8f}
+
+/* sections */
+section{margin-top:36px}
+.head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.head h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em}
+.head small{color:var(--faint);font-size:12px}
+
+/* summary */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.summary div{padding:20px 22px;border-left:1px solid var(--line)}
+.summary div:first-child{border-left:0}
+.summary dt{font-size:13px;color:var(--sub);margin:0}
+.summary dd{margin:6px 0 2px;font-size:25px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.summary .note{font-size:12px;color:var(--faint)}
+dl{margin:0}
+
+/* panels */
+.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:22px}
+.panel h3{margin:0 0 4px;font-size:15px;font-weight:700}
+.panel .cap{margin:0 0 18px;font-size:12px;color:var(--faint)}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--sub);margin-bottom:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.chart svg{display:block;width:100%;height:auto}
+.chart text{font-size:11px;fill:var(--faint);font-family:inherit}
+
+table{width:100%;border-collapse:collapse}
+.metrics td,.metrics th{padding:13px 0;border-bottom:1px solid var(--line);text-align:left;font-weight:400}
+.metrics tr:last-child td,.metrics tr:last-child th{border-bottom:0}
+.metrics th{font-weight:600}
+.metrics th span{display:block;font-weight:400;font-size:12px;color:var(--faint);margin-top:2px}
+.metrics td{text-align:right;color:var(--faint);font-size:13px}
+
+/* compare */
+.compare-wrap{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow-x:auto}
+.compare{min-width:520px}
+.compare th,.compare td{padding:14px 22px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+.compare thead th{background:#fafbfc;font-size:13px;font-weight:700}
+.compare th:first-child,.compare td:first-child{text-align:left;color:var(--sub);font-weight:400}
+.compare thead th:first-child{font-weight:400}
+.compare tbody tr:last-child td{border-bottom:0}
+.compare td{color:var(--faint)}
+.disclaimer{margin:12px 0 0;font-size:12px;color:var(--faint)}
+
+
+.compare-selections{display:grid;gap:9px}
+.compare-selection{display:grid;grid-template-columns:minmax(180px,1fr) 130px 76px;gap:8px}
+.compare-selection input,.compare-selection select{height:42px;border:1px solid var(--line-strong);border-radius:4px;padding:0 12px;background:#fff;min-width:0}
+.compare-selection button,.compare-actions button{height:42px;border:1px solid var(--line-strong);border-radius:4px;padding:0 14px;background:#fff;cursor:pointer;font-size:13px}
+.compare-selection button:hover,.compare-actions .cmp-add:hover{border-color:var(--accent);color:var(--accent)}
+.compare-selection button:disabled{opacity:.4;cursor:not-allowed}
+.compare-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.compare-actions .cmp-run{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.compare-actions .cmp-run:hover{background:#173fb0}
+@media(max-width:560px){.compare-selection{grid-template-columns:minmax(0,1fr) 105px 62px}.compare-selection input,.compare-selection select{padding:0 8px}.compare-selection button{padding:0 8px}}
+\n/* 재무제표 헤더: 연도/탭/비교함 버튼을 같은 상단 기준선에 정렬 */
+.stmt-head{align-items:flex-start!important}
+.stmt-title-tabs{align-items:center!important;min-height:36px}
+.stmt-title-tabs h3{margin:0!important;line-height:36px}
+.stmt-year-select,.stmt-tabs button,.stmt-head-actions .add-current-btn{height:36px!important;min-height:36px;box-sizing:border-box}
+.stmt-head-actions{align-self:flex-start!important;margin:0!important;padding:0!important}
+.stmt-head-actions>div{margin:0!important;padding:0!important}
+/* 재무제표 전환 버튼 탭 */
+.stmt-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:nowrap;gap:16px}
+.stmt-title-tabs{display:flex;align-items:center;gap:14px;flex-wrap:wrap;min-width:0}.stmt-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex:0 0 auto;flex-wrap:nowrap}.stmt-head-actions>div{position:relative}.stmt-tabs{display:flex;gap:6px}
+.stmt-tabs button{background:#fff;border:1px solid var(--line-strong);padding:6px 14px;border-radius:4px;font-size:13px;color:var(--sub);cursor:pointer;font-weight:500}
+.stmt-tabs button:hover{border-color:var(--accent);color:var(--accent)}
+.stmt-tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}.add-current-btn{white-space:nowrap;width:132px;min-width:132px;height:36px;background:var(--accent)!important;border:1px solid var(--accent)!important;color:#fff!important;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}.add-current-btn:hover{background:#173fb0!important;border-color:#173fb0!important}.add-current-btn.is-added{background:#e5e7eb!important;border-color:#d1d5db!important;color:#374151!important}.add-current-btn.is-added:hover{background:#d1d5db!important;border-color:#c4c9d1!important}.stmt-head-actions .cmp-run{height:36px;padding:0 14px;border-radius:4px;font-size:13px}
+.stmt-head-actions>div{width:150px;min-width:150px;text-align:center}#compareAddedFeedback{position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);width:190px;max-width:calc(100vw - 40px);box-sizing:border-box;padding:0 4px;font-size:12px;color:#16835d;text-align:center;margin:0;min-height:36px;line-height:17px;overflow-wrap:anywhere;word-break:normal;visibility:hidden;opacity:0;transition:opacity .2s;pointer-events:none}#compareAddedFeedback .feedback-company-year,#compareAddedFeedback .feedback-action{display:block;width:100%;box-sizing:border-box}#compareAddedFeedback .feedback-action{white-space:nowrap;font-size:11px}
+#compareAddedFeedback.show{visibility:visible;opacity:1}
+
+
+/* 기업 비교 그래프 탭 */
+.compare-chart-panel{margin-top:14px}
+.compare-chart-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 16px}
+.compare-chart-tabs button{background:#fff;border:1px solid var(--line-strong);padding:7px 13px;border-radius:4px;font-size:13px;color:var(--sub);cursor:pointer;font-weight:500}
+.compare-chart-tabs button:hover{border-color:var(--accent);color:var(--accent)}
+.compare-chart-tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.compare-chart-area{width:100%;overflow:hidden}.compare-chart-area svg{display:block;width:100%;height:auto}.compare-chart-area text{font-family:inherit}.compare-chart-empty{padding:34px 12px;text-align:center;color:var(--faint);font-size:13px}.compare-metric-card{padding:15px 0 13px;border-bottom:1px solid var(--line)}.compare-metric-card:last-of-type{border-bottom:0}.compare-metric-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:7px}.compare-metric-heading strong{font-size:14px;color:var(--ink)}.compare-metric-heading span{font-size:11px;color:var(--faint)}.compare-chart-footnote{margin-top:10px;padding:10px 12px;background:#f7f9fc;border-radius:5px;color:var(--sub);font-size:11px;line-height:1.5}
+
+
+/* 상세 재무제표 표 스타일 */
+.detail-table-wrap{overflow-x:auto;margin-top:12px}
+.detail-table{width:100%;border-collapse:collapse;font-size:14px}
+.detail-table th, .detail-table td{padding:10px 14px;border-bottom:1px solid var(--line);text-align:right}
+.detail-table th:first-child, .detail-table td:first-child{text-align:left}
+.detail-table thead th{background:#fafbfc;font-weight:600;color:var(--ink)}
+.detail-table tbody tr.sub-head{background:#f8f9fa;font-weight:600}
+
+footer{margin-top:56px;border-top:1px solid var(--line);background:var(--bg)}
+footer .wrap{display:flex;justify-content:space-between;gap:12px;padding-top:20px;padding-bottom:28px;font-size:12px;color:var(--faint)}
+
+@media(max-width:820px){
+  .wrap{padding:0 18px}
+  .nav{display:none}
+  .hero{padding:42px 0 38px}
+  .hero h1{font-size:27px}
+  .hero p{white-space:normal;max-width:100%}
+  .search{flex-wrap:wrap}
+  .search input{flex:1 1 100%;border-bottom:1px solid var(--line)}
+  .search select{flex:1;border-left:0}
+  .search button{padding:0 22px;height:52px}
+  .summary{grid-template-columns:repeat(2,1fr)}
+  .summary div:nth-child(3){border-left:0}
+  .summary div:nth-child(n+3){border-top:1px solid var(--line)}
+  .grid{grid-template-columns:1fr}
+  .compare th,.compare td{padding:12px 14px}
+  footer .wrap{flex-direction:column}
+}
+
+#notice.err{border-color:var(--neg);background:#fdecec;color:#8f2323}
+.summary dd.na,.metrics td.na{color:var(--faint)}
+.metrics td b{color:var(--ink);font-weight:600}
+.up{color:var(--pos)}.down{color:var(--neg)}
+.compare td b{color:var(--ink);font-weight:600}
+.cmp-delta{display:block;margin-top:3px;font-size:11px;line-height:1.35;font-weight:600;white-space:nowrap}.cmp-delta.up{color:var(--neg)}.cmp-delta.down{color:var(--accent)}.cmp-delta em{font-style:normal;font-weight:400;color:var(--faint);margin-left:3px}
+.info-head{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.info-head h3{font-size:20px;margin:0 6px 0 0}
+.badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:4px;border:1px solid var(--line-strong);color:var(--sub);background:#fff}
+.badge.ok{color:var(--pos);border-color:#bfe5d6;background:#eefaf5}
+.badge.bad{color:var(--neg);border-color:#efc4c4;background:#fdf0f0}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 24px;margin:0}
+.kv dt{font-size:12px;color:var(--faint)}
+.kv dd{margin:2px 0 0;font-size:14px;word-break:break-all}
+details{margin-top:16px;font-size:12px;color:var(--faint)}
+details pre{max-height:220px;overflow:auto;background:#fafbfc;border:1px solid var(--line);padding:10px;border-radius:4px;color:var(--sub)}
+@media(max-width:820px){.kv{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:720px){.stmt-head{align-items:flex-start;flex-wrap:wrap}.stmt-title-tabs{width:100%;gap:10px}.stmt-head-actions{width:100%;justify-content:flex-end}.stmt-tabs{gap:4px}.stmt-tabs button{padding:6px 9px}}
+.stmt-year-select{height:36px;min-width:88px;padding:0 10px;border:1px solid var(--line-strong);border-radius:4px;background:#fff;color:var(--text);font-size:13px;cursor:pointer}
+[hidden]{display:none!important}
+.quick button.clear{border:0;color:var(--faint);text-decoration:underline;padding:4px 2px;margin-left:4px;background:none}
+.quick button.clear:hover{color:var(--ink);background:none}
+.stmt img{display:block;width:100%;max-width:1040px;height:auto;border:1px solid var(--line);border-radius:4px;background:#fff}
+.stmt .dl{display:inline-block;margin-top:12px;font-size:13px;color:var(--accent);text-decoration:underline}
+
+.main-metric-chart{background:#fff;border:1px solid var(--line);border-radius:6px;padding:14px 14px 4px;margin:12px 0}
+.main-metric-title{display:flex;justify-content:space-between;align-items:center;margin:0 4px 4px;color:var(--ink);font-size:13px}
+.main-metric-title span{font-size:11px;color:var(--faint);font-weight:400}
+.main-metric-chart svg{display:block;width:100%;height:auto;overflow:visible}
+
+/* 매출액·영업이익 그래프 확대 보기 */
+.main-metric-chart{cursor:zoom-in;transition:box-shadow .18s,border-color .18s}
+.main-metric-chart:hover{box-shadow:0 5px 18px rgba(31,65,120,.10);border-color:#9db7f5}
+.main-metric-chart:focus-visible{outline:3px solid #8aa9f5;outline-offset:3px}
+.chart-lightbox{position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.72);display:none;align-items:center;justify-content:center;padding:24px}
+.chart-lightbox.open{display:flex}
+.chart-lightbox-dialog{position:relative;width:min(1100px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.28)}
+.chart-lightbox-title{font-size:19px;font-weight:800;color:#172033;margin:0 48px 18px 0}
+.chart-lightbox-close{position:absolute;right:18px;top:15px;width:38px;height:38px;border:0;border-radius:50%;background:#eef2f7;color:#334155;font-size:24px;cursor:pointer}
+.chart-lightbox-content svg{display:block;width:100%;height:auto;max-height:68vh;overflow:visible}
+.chart-lightbox-hint{font-size:12px;color:#64748b;margin:14px 0 0}
+@media(max-width:600px){.chart-lightbox{padding:10px}.chart-lightbox-dialog{padding:20px 14px;border-radius:14px}.chart-lightbox-content svg{min-width:600px}.chart-lightbox-content{overflow-x:auto}}
+
+
+/* FINVIEW 재무 분석 */
+.analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.analysis-card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:20px;min-width:0}
+.analysis-card h3{margin:0 0 5px;font-size:15px}
+.analysis-card .sub{font-size:12px;color:var(--faint);margin:0 0 14px}
+.analysis-table{font-size:13px}
+.analysis-table th,.analysis-table td{padding:10px 7px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.analysis-table th:first-child,.analysis-table td:first-child{text-align:left;padding-left:0}
+.analysis-table th{color:var(--sub);font-weight:600}
+.analysis-table tr:last-child td{border-bottom:0}
+.analysis-pill{display:inline-block;padding:3px 8px;border-radius:20px;background:#f1f3f6;font-size:11px;font-weight:600}
+.analysis-pill.good{background:#e7f5ef;color:#08784f}.analysis-pill.warn{background:#fff3df;color:#a86608}.analysis-pill.bad{background:#fdecec;color:#b52e2e}
+.growth-pos{color:var(--pos);font-weight:650}.growth-neg{color:var(--neg);font-weight:650}.growth-na{color:var(--faint)}
+@media(max-width:760px){.analysis-grid{grid-template-columns:1fr}.analysis-card{padding:16px}.analysis-table{font-size:12px}}
+
+
+
+/* FINVIEW 상담하기 */
+.contact-launch{border:0;border-radius:999px;background:#2457d6;color:#fff;padding:12px 22px;font-size:14px;font-weight:750;cursor:pointer;box-shadow:0 8px 22px rgba(36,87,214,.22);transition:transform .18s,background .18s}
+.contact-launch:hover{background:#1747bd;transform:translateY(-2px)}
+footer .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.contact-overlay{position:fixed;inset:0;z-index:10050;background:rgba(10,18,35,.62);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:18px}
+.contact-overlay.open{display:flex}
+.contact-phone{width:min(390px,100%);height:min(760px,calc(100dvh - 36px));min-height:560px;background:#f7f8fc;border:8px solid #151a25;border-radius:38px;box-shadow:0 28px 90px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.contact-phone:before{content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);width:86px;height:17px;background:#151a25;border-radius:0 0 13px 13px;z-index:2}
+.contact-top{background:#fff;padding:30px 20px 16px;border-bottom:1px solid #e8ebf2;display:flex;align-items:center;justify-content:space-between}
+.contact-brand{font-size:13px;font-weight:850;letter-spacing:.12em;color:#2457d6}
+.contact-close{border:0;background:#f0f2f7;width:32px;height:32px;border-radius:50%;font-size:21px;line-height:1;color:#475569;cursor:pointer}
+.contact-progress{height:4px;background:#e7eaf1}.contact-progress span{display:block;height:100%;width:33.333%;background:#2457d6;transition:width .2s}
+.contact-content{padding:24px 20px 18px;overflow:auto;flex:1}
+.contact-step-label{font-size:11px;font-weight:800;color:#2457d6;letter-spacing:.1em;margin-bottom:10px}
+.contact-content h2{font-size:23px;line-height:1.35;margin:0 0 8px;color:#172033;letter-spacing:-.04em}
+.contact-desc{font-size:13px;line-height:1.6;color:#748096;margin:0 0 22px}
+.contact-options{display:grid;gap:10px}
+.contact-option{display:flex;align-items:center;gap:13px;width:100%;padding:16px 14px;border:1px solid #e1e6ef;border-radius:16px;background:#fff;text-align:left;cursor:pointer;transition:.16s;color:#1e293b}
+.contact-option:hover{border-color:#9bb5fa;background:#f8faff}
+.contact-option.selected{border:2px solid #2457d6;background:#f1f5ff;padding:15px 13px}
+.contact-option-icon{width:42px;height:42px;flex:0 0 42px;border-radius:13px;background:#eef3ff;display:grid;place-items:center;font-size:20px}
+.contact-option strong{display:block;font-size:14px;margin-bottom:3px}.contact-option small{display:block;font-size:11px;color:#8792a5}
+.contact-option .contact-check{margin-left:auto;color:#2457d6;font-size:18px;opacity:0}.contact-option.selected .contact-check{opacity:1}
+.contact-field{display:block;margin:17px 0 8px;font-size:12px;font-weight:750;color:#39465b}
+.contact-input{width:100%;height:50px;border:1px solid #dce2ec;border-radius:13px;background:#fff;padding:0 14px;font-size:15px;color:#172033;outline:none;box-sizing:border-box}
+.contact-input:focus,.contact-textarea:focus{border-color:#2457d6;box-shadow:0 0 0 3px rgba(36,87,214,.1)}
+.contact-textarea{width:100%;min-height:170px;resize:vertical;border:1px solid #dce2ec;border-radius:13px;background:#fff;padding:13px 14px;font:inherit;font-size:14px;line-height:1.6;color:#172033;outline:none;box-sizing:border-box}
+.contact-help{font-size:11px;color:#8a94a6;line-height:1.55;margin:9px 0 0}
+.contact-summary{background:#fff;border:1px solid #e6eaf1;border-radius:15px;padding:15px;margin:18px 0}
+.contact-summary div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #f0f2f6;font-size:12px}.contact-summary div:last-child{border-bottom:0}.contact-summary span{color:#8590a2}.contact-summary strong{text-align:right;color:#243047;word-break:break-all}
+.contact-consent{font-size:10px;line-height:1.55;color:#8993a4;margin-top:12px}
+.contact-actions{padding:14px 18px 20px;background:#fff;border-top:1px solid #e8ebf2;display:flex;gap:9px}
+.contact-primary,.contact-secondary{height:48px;border-radius:13px;font-size:14px;font-weight:750;cursor:pointer}
+.contact-primary{flex:1;border:0;background:#2457d6;color:#fff}.contact-primary:disabled{opacity:.45;cursor:not-allowed}
+.contact-secondary{padding:0 17px;border:1px solid #e0e5ee;background:#fff;color:#647084}
+.contact-status{font-size:12px;line-height:1.5;margin-top:12px;color:#b42318;min-height:18px}
+@media(max-width:480px){.contact-overlay{padding:0}.contact-phone{width:100%;height:100dvh;min-height:0;border:0;border-radius:0}.contact-phone:before{display:none}.contact-top{padding-top:18px}.contact-content{padding-top:22px}}
+
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#" onclick="showDashboard(event)">FINVIEW</a>
+    <nav class="nav">
+      <a class="on" href="#" data-go="top">조회</a>
+      <a href="#" data-go="fin">기업 재무정보</a>
+      <a href="#" data-go="cmp">기업 비교</a>
+      <a href="#" data-go="guide">서비스 안내</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero" id="heroPage">
+  <div class="wrap">
+    <h1>기업명과 사업연도로<br>재무제표를 조회하세요</h1>
+    <p>공시된 재무제표와 주요 재무비율, 연도별 실적 추이를 한 화면에서 확인할 수 있습니다.</p>
+
+    <div class="search-box">
+      <div class="search" role="search">
+        <input id="company" type="text" placeholder="기업명, 법인 또는 사업자 등록번호를 입력하세요" aria-label="기업명 또는 번호" autocomplete="off">
+        <select id="year" aria-label="사업연도">
+          <option selected>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option>
+        </select>
+        <button type="button" onclick="searchCompany()">조회</button>
+      </div>
+      <ul id="autocompleteList" class="autocomplete-list" role="listbox"></ul>
+    </div>
+
+    <div class="quick">
+      <span>자주 찾는 기업</span>
+      <button type="button" onclick="pick('삼성전자')">삼성전자</button>
+      <button type="button" onclick="pick('SK하이닉스')">SK하이닉스</button>
+      <button type="button" onclick="pick('현대자동차')">현대자동차</button>
+      <button type="button" onclick="pick('NAVER')">NAVER</button>
+    </div>
+    <div class="quick" id="recentRow" hidden><span>최근 조회</span><span id="recentList" style="display:contents"></span><button type="button" class="clear" onclick="clearRecent()">기록 삭제</button></div>
+    <div id="notice" role="status"></div>
+  </div>
+</div>
+
+<main class="wrap">
+<div id="results" hidden>
+
+  <section id="infoSec">
+    <div class="head"><h2>기업 상태</h2></div>
+    <div class="panel" id="info"><p class="cap" style="margin:0">기업명을 입력하고 조회를 눌러 주세요.</p></div>
+  </section>
+
+  <section id="sumSec">
+    <div class="head"><h2>재무 요약</h2><small id="sumInfo">기업명을 입력하고 조회를 눌러 주세요.</small></div>
+    <dl class="summary">
+      <div><dt>매출액</dt><dd id="sSale" class="na">-</dd><span class="note" id="nSale">&nbsp;</span></div>
+      <div><dt>영업이익</dt><dd id="sOp" class="na">-</dd><span class="note" id="nOp">&nbsp;</span></div>
+      <div><dt>당기순이익</dt><dd id="sNp" class="na">-</dd><span class="note" id="nNp">&nbsp;</span></div>
+      <div><dt>부채비율</dt><dd id="sDebt" class="na">-</dd><span class="note" id="nDebt">&nbsp;</span></div>
+    </dl>
+    
+    <!-- 상세 재무제표 탭 및 상자 -->
+    <div class="panel stmt" id="stmtBox" style="margin-top:14px" hidden>
+      <div class="stmt-head">
+        <div class="stmt-title-tabs">
+          <h3 id="stmtTitle">요약 재무제표</h3>
+          <select id="stmtYearSelect" class="stmt-year-select" aria-label="재무제표 사업연도" onchange="changeStatementYear(this.value)"><option>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option></select>
+          <div class="stmt-tabs">
+            <button type="button" class="on" onclick="switchStmtTab('summary')">요약</button>
+            <button type="button" onclick="switchStmtTab('bs')">재무상태표</button>
+            <button type="button" onclick="switchStmtTab('pl')">손익계산서</button>
+          </div>
+        </div>
+        <div class="stmt-head-actions">
+          <div><button type="button" class="cmp-run add-current-btn" id="addCurrentCompareBtn" onclick="toggleCurrentCompare()">+ 비교함에 담기</button><div id="compareAddedFeedback" role="status" aria-live="polite"></div></div>
+        </div>
+      </div>
+      <p class="cap" id="stmtDesc">선택한 연도를 포함한 5개년 요약 항목을 이미지로 만든 것입니다. 세부 계정과목은 포함하지 않습니다.</p>
+      
+      <!-- 요약 이미지 보기 -->
+      <div id="stmtImgWrap">
+        <img id="stmtImg" alt="요약 재무제표">
+        <a class="dl" id="stmtDl" href="#">이미지 저장</a>
+      </div>
+      
+      <!-- 상세 재무제표 표 보기 -->
+      <div id="stmtTableWrap" class="detail-table-wrap" hidden></div>
+    </div>
+  </section>
+
+  <section id="financialAnalysisSec">
+    <div class="head"><h2>재무 분석</h2><small>최근 5개년 재무정보를 바탕으로 자동 계산</small></div>
+    <div class="analysis-grid">
+      <div class="analysis-card">
+        <h3>전년 대비 증감률</h3>
+        <p class="sub">각 사업연도를 직전 연도와 비교합니다. 적자 전환 등은 별도 표기합니다.</p>
+        <div id="growthAnalysis"></div>
+      </div>
+      <div class="analysis-card">
+        <h3>재무건전성 분석</h3>
+        <p class="sub">수익성·안정성·성장성 지표를 계산합니다. 평가는 참고용이며 업종별 차이를 반영하지 않습니다.</p>
+        <div id="healthAnalysis"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <h3>매출액과 영업이익 추이</h3>
+      <p class="cap">선택한 연도를 포함한 최근 5개년</p>
+      <div class="legend"><span><i style="background:#9db7f5"></i>매출액</span><span><i style="background:var(--accent)"></i>영업이익</span></div>
+      <div class="chart" id="chart"></div>
+    </div>
+
+    <div class="panel">
+      <h3>주요 재무비율</h3>
+      <p class="cap">요약재무제표 항목으로 계산한 값입니다.</p>
+      <table class="metrics">
+        <tr><th scope="row">수익성<span>영업이익률, 순이익률</span></th><td id="m1" class="na">-</td></tr>
+        <tr><th scope="row">안정성<span>부채비율, 자기자본비율</span></th><td id="m2" class="na">-</td></tr>
+        <tr><th scope="row">성장성<span>매출, 영업이익 증가율</span></th><td id="m3" class="na">-</td></tr>
+        <tr><th scope="row">규모<span>총자산, 자본총계</span></th><td id="m4" class="na">-</td></tr>
+      </table>
+    </div>
+  </section>
+
+
+
+</div>
+
+  <section id="cmpSec" hidden>
+    <div class="head"><h2>원하는 기업·연도 비교</h2><small id="cmpInfo">최대 4개 항목까지 비교할 수 있습니다.</small></div>
+    <div class="panel">
+      <p class="cap">기업명은 메인 화면에서 조회한 뒤 ‘비교함에 담기’를 눌러 추가하세요. 이 페이지에서는 담긴 기업의 비교 연도만 변경할 수 있습니다.</p>
+      <div id="compareSelections" class="compare-selections"></div>
+      <div class="compare-actions">
+        <button type="button" class="cmp-run" onclick="runCustomCompare()">선택 항목 비교하기</button>
+      </div>
+      <p class="cap" id="compareNotice" role="status" style="margin:12px 0 0"></p>
+    </div>
+    <div class="panel compare-chart-panel">
+      <h3>재무지표 그래프</h3>
+      <p class="cap">관련 지표를 묶어 한눈에 비교할 수 있도록 구성했습니다.</p>
+      <div class="compare-chart-tabs" id="compareChartTabs" role="tablist" aria-label="그래프 종류">
+        <button type="button" class="on" data-chart="performance">실적 규모</button>
+        <button type="button" data-chart="profitability">수익성</button>
+        <button type="button" data-chart="stability">재무안정성</button>
+      </div>
+      <div id="compareChart" class="compare-chart-area"><div class="compare-chart-empty">기업을 비교하면 그래프가 표시됩니다.</div></div>
+    </div>
+    <div class="compare-wrap" style="margin-top:14px">
+      <table class="compare" id="customCompareTable">
+        <thead id="cmpHead"><tr><th>항목</th></tr></thead>
+        <tbody id="cmpBody">
+          <tr><td colspan="5" style="text-align:center;color:var(--muted)">비교함에 기업을 담고 ‘선택 항목 비교하기’를 눌러주세요.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="disclaimer">매출 성장률은 선택 연도의 매출액을 전년과 비교해 계산합니다. ROE는 당기순이익을 기말 자본총계로 나눈 단순 계산값입니다. 연결재무제표가 있으면 연결 기준, 없으면 별도 기준으로 표시합니다.</p>
+  </section>
+
+  <section id="guide" hidden>
+    <div class="head"><h2>서비스 안내</h2></div>
+    <div class="panel">
+      <dl class="kv">
+        <div><dt>조회 방법</dt><dd>기업명, 법인번호, 사업자등록번호 중 하나를 입력하고 사업연도를 선택한 뒤 조회를 누릅니다.</dd></div>
+        <div><dt>제공 정보</dt><dd>기업 기본 정보, 상장 여부, 요약 재무제표, 재무상태표 및 손익계산서, 주요 재무비율, 5개년 추이</dd></div>
+        <div><dt>기업 비교</dt><dd>기업 비교 메뉴에서 최대 4개의 기업과 사업연도를 직접 선택해 핵심 재무지표를 비교할 수 있습니다.</dd></div>
+        <div><dt>데이터 출처</dt><dd>금융위원회 기업기본정보, 금융위원회 기업 재무정보 (공공데이터포털)</dd></div>
+        <div><dt>갱신 시점</dt><dd>기준일 다음 영업일 오후 1시 이후 반영되어, 최신 연도는 조회되지 않을 수 있습니다.</dd></div>
+        <div><dt>유의사항</dt><dd>공시 자료를 바탕으로 한 참고 정보이며 투자 판단의 근거로 사용할 수 없습니다.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 FINVIEW</span>
+    <span>데이터 출처: 금융위원회 기업기본정보, 금융위원회 기업 재무정보, 공공데이터포털</span>
+    <button type="button" class="contact-launch" onclick="openContact()">상담하기</button>
+  </div>
+</footer>
+
+<div class="contact-overlay" id="contactOverlay" aria-hidden="true" onclick="if(event.target===this)closeContact()">
+  <section class="contact-phone" role="dialog" aria-modal="true" aria-labelledby="contactTitle">
+    <div class="contact-top"><span class="contact-brand">FINVIEW · CONTACT</span><button type="button" class="contact-close" aria-label="닫기" onclick="closeContact()">×</button></div>
+    <div class="contact-progress"><span id="contactProgressBar"></span></div>
+    <div class="contact-content" id="contactContent">
+      <div class="contact-step-label" id="contactStepLabel">STEP 01 / 03</div>
+      <h2 id="contactTitle">어떤 상담이 필요하신가요?</h2>
+      <p class="contact-desc" id="contactDesc">문의 목적을 선택해 주세요. 선택하신 내용에 맞춰 확인하겠습니다.</p>
+      <div id="contactStepBody"></div>
+      <div class="contact-status" id="contactStatus" role="status" aria-live="polite"></div>
+    </div>
+    <div class="contact-actions" id="contactActions"></div>
+  </section>
+</div>
+
+
+<script>
+var KEY='1ff87e023d06dea3121d6246c9682b2fb3085cebf1fb1c0971bf1cdb396a0389';
+var BASE='https://apis.data.go.kr/1160100/service';
+var PROXY=''; // CORS 오류가 나면 프록시 주소를 넣으세요. 예: 'https://내워커.workers.dev/?url='
+var ALIAS={'SK하이닉스':'에스케이하이닉스','NAVER':'네이버','LG전자':'엘지전자','SK':'에스케이'};
+var corpCache={},seq=0;
+var currentCorp = null, currentYear = 2025;
+
+function $(id){return document.getElementById(id)}
+function pick(name){$('company').value=name;hideAutocomplete();searchCompany()}
+function note(msg,err){var n=$('notice');n.textContent=msg;n.className=err?'err':'';n.style.display=msg?'block':'none'}
+
+function showDashboard(e){
+  // FINVIEW 로고를 눌러도 기존 조회 데이터와 입력값을 초기화하지 않는다.
+  if(e) e.preventDefault();
+  $('heroPage').hidden=false;
+  $('results').hidden=true;
+  $('cmpSec').hidden=true;
+  $('guide').hidden=true;
+  document.querySelectorAll('.nav a').forEach(function(a){
+    a.classList.toggle('on',a.getAttribute('data-go')==='top');
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function showFinancePage(){
+  $('heroPage').hidden=true;
+  $('results').hidden=false;
+  $('cmpSec').hidden=true;
+  $('guide').hidden=true;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function showComparePage(){
+  $('heroPage').hidden=true;
+  $('results').hidden=true;
+  $('guide').hidden=true;
+  $('cmpSec').hidden=false;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function resetAll(e){
+  if(e) e.preventDefault();
+  $('heroPage').hidden=false;
+  $('company').value = '';
+  hideAutocomplete();
+  note('');
+  $('results').hidden = true;
+  $('cmpSec').hidden = true;
+  $('guide').hidden = true;
+  $('guide').hidden = true;
+  clearAll();
+  document.querySelectorAll('.nav a').forEach(function(x){x.classList.remove('on')});
+  document.querySelector('.nav a[data-go="top"]').classList.add('on');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function api(path,params){
+  var p=Object.assign({serviceKey:KEY,resultType:'json',pageNo:1,numOfRows:100},params);
+  var u=BASE+path+'?'+new URLSearchParams(p).toString();
+  return fetch(PROXY?PROXY+encodeURIComponent(u):u).then(function(r){
+    if(!r.ok)throw new Error('서버 응답 오류 (HTTP '+r.status+')');
+    return r.text();
+  }).then(function(t){
+    var j;try{j=JSON.parse(t)}catch(e){throw new Error('API 응답을 읽지 못했습니다: '+t.replace(/<[^>]+>/g,' ').trim().slice(0,140))}
+    var h=j.response&&j.response.header;
+    if(h&&h.resultCode!=='00')throw new Error(h.resultMsg||'API 오류');
+    return j.response.body;
+  });
+}
+function items(b){var i=b&&b.items&&b.items.item;return !i?[]:Array.isArray(i)?i:[i]}
+function norm(s){return String(s||'').replace(/\(주\)|㈜|주식회사|\s/g,'')}
+
+async function findCorp(inputVal){
+  if(corpCache[inputVal])return corpCache[inputVal];
+  
+  var queryParam = {};
+  var cleanVal = inputVal.trim();
+  
+  if(/^\d+$/.test(cleanVal)){
+    if(cleanVal.length === 13){
+      queryParam = {crno: cleanVal};
+    } else if(cleanVal.length === 10){
+      queryParam = {bzno: cleanVal};
+    } else {
+      queryParam = {corpNm: cleanVal};
+    }
+  } else {
+    var tries=[ALIAS[cleanVal],cleanVal].filter(Boolean);
+    for(var i=0;i<tries.length;i++){
+      var l=items(await api('/GetCorpBasicInfoService_V2/getCorpOutline_V2',{corpNm:tries[i]}));
+      if(!l.length)continue;
+      var ex=l.filter(function(x){return norm(x.corpNm)===norm(tries[i])});
+      var hit=(ex.length?ex:l)[0];
+      return corpCache[inputVal]={crno:hit.crno,name:hit.corpNm,info:hit};
+    }
+    throw new Error('"'+inputVal+'" 기업을 찾지 못했습니다. 등록된 법인명(예: 에스케이하이닉스)으로 다시 검색해 보세요.');
+  }
+
+  var l = items(await api('/GetCorpBasicInfoService_V2/getCorpOutline_V2', queryParam));
+  if(!l.length){
+    throw new Error('해당 번호(' + cleanVal + ')로 등록된 기업 정보를 찾지 못했습니다.');
+  }
+  var hit = l[0];
+  return corpCache[inputVal] = {crno: hit.crno, name: hit.corpNm, info: hit};
+}
+
+async function getSumm(crno,year){
+  var l=items(await api('/GetFinaStatInfoService_V2/getSummFinaStat_V2',{crno:crno,bizYear:String(year)}));
+  if(!l.length)return null;
+  var c=l.filter(function(x){return /연결/.test(x.fnclDcdNm||'')});
+  return (c.length?c:l)[0];
+}
+
+async function getBs(crno, year){
+  try {
+    var res = await api('/GetFinaStatInfoService_V2/getBs_V2', {crno: crno, bizYear: String(year)});
+    return items(res);
+  } catch(e) {
+    console.warn("재무상태표 조회 오류:", e);
+    return [];
+  }
+}
+
+async function getIncoStat(crno, year){
+  try {
+    var res = await api('/GetFinaStatInfoService_V2/getIncoStat_V2', {crno: crno, bizYear: String(year)});
+    return items(res);
+  } catch(e) {
+    console.warn("손익계산서 조회 오류:", e);
+    return [];
+  }
+}
+
+function n(x,k){return x&&x[k]!==undefined&&x[k]!==''&&x[k]!==null?Number(x[k]):null}
+function won(v){
+  if(v===null||isNaN(v))return '-';
+  var a=Math.abs(v);
+  if(a>=1e12)return (v/1e12).toFixed(1)+'조원';
+  if(a>=1e8)return Math.round(v/1e8).toLocaleString('ko-KR')+'억원';
+  return v.toLocaleString('ko-KR')+'원';
+}
+function pct(a,b){return (a===null||!b)?null:a/b*100}
+function p(v,sign){if(v===null||isNaN(v))return '-';return (sign&&v>0?'+':'')+v.toFixed(1)+'%'}
+function gr(a,b){return (a===null||!b)?null:(a-b)/Math.abs(b)*100}
+function cls(v){return v===null?'':v>=0?'up':'down'}
+function set(id,txt){var e=$(id);e.textContent=txt;e.classList.toggle('na',txt==='-')}
+function html(id,h){$(id).innerHTML=h}
+
+function drawChart(rs,years){
+  var host=$('chart');
+  var valid=rs.map(function(r,i){return {r:r,year:years[i],sales:n(r,'enpSaleAmt'),op:n(r,'enpBzopPft')};});
+  if(!valid.some(function(x){return x.sales!==null||x.op!==null;})){
+    host.innerHTML='<p class="cap">표시할 데이터가 없습니다.</p>';return;
+  }
+  function metricPanel(key,title,color){
+    var vals=valid.map(function(x){return x[key];});
+    var finite=vals.filter(function(v){return v!==null&&isFinite(v);});
+    if(!finite.length)return '';
+    var maxAbs=Math.max.apply(null,finite.map(Math.abs))||1;
+    var W=1000,H=205,left=56,right=24,base=132,top=30,plotH=92;
+    var slot=(W-left-right)/valid.length,barW=Math.min(48,slot*.42);
+    var svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+title+' 연도별 그래프">';
+    [0,.5,1].forEach(function(t){
+      var y=base-t*plotH;
+      svg+='<line x1="'+left+'" y1="'+y+'" x2="'+(W-right)+'" y2="'+y+'" stroke="'+(t===0?'#cbd5e1':'#e8edf3')+'" stroke-width="1"/>';
+    });
+    valid.forEach(function(x,i){
+      var v=x[key],cx=left+slot*(i+.5);
+      if(v!==null&&isFinite(v)){
+        var h=Math.max(2,Math.abs(v)/maxAbs*plotH);
+        var y=v>=0?base-h:base;
+        svg+='<rect x="'+(cx-barW/2)+'" y="'+y+'" width="'+barW+'" height="'+h+'" rx="5" fill="'+color+'"/>';
+        var label=won(v);
+        svg+='<text x="'+cx+'" y="'+Math.max(17,y-8)+'" text-anchor="middle" fill="#475569" font-size="13" font-weight="700">'+esc(label)+'</text>';
+      }else{
+        svg+='<text x="'+cx+'" y="'+(base-8)+'" text-anchor="middle" fill="#94a3b8" font-size="12">자료 없음</text>';
+      }
+      svg+='<text x="'+cx+'" y="165" text-anchor="middle" fill="#64748b" font-size="13">'+esc(String(x.year)+'년')+'</text>';
+    });
+    svg+='</svg>';
+    return '<div class="main-metric-chart" role="button" tabindex="0" aria-label="'+title+' 그래프 크게 보기" onclick="openChartImage(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openChartImage(this)}"><div class="main-metric-title"><strong>'+title+'</strong><span>클릭하면 크게 보기 · 단위: 원</span></div>'+svg+'</div>';
+  }
+  host.innerHTML=metricPanel('sales','매출액','#315bd6')+metricPanel('op','영업이익','#e39a32')+
+    '<p class="cap" style="margin-top:10px">각 지표는 자체 눈금으로 표시해 매출액과 영업이익의 규모 차이로 작은 값이 묻히지 않도록 했습니다. 막대 위 숫자는 실제 금액입니다.</p>';
+}
+
+function fmtPct(v){return v===null||!Number.isFinite(v)?'-':(v>0?'+':'')+v.toFixed(1)+'%'}
+function growthRate(now,prev){
+  if(now===null||prev===null)return null;
+  if(prev===0)return now===0?0:null;
+  if(prev<0&&now>=0)return '흑자전환';
+  if(prev>=0&&now<0)return '적자전환';
+  if(prev<0&&now<0)return '적자 지속';
+  return (now/prev-1)*100;
+}
+function growthText(v){
+  if(v===null)return '<span class="growth-na">자료 없음</span>';
+  if(typeof v==='string')return '<span class="growth-na">'+v+'</span>';
+  return '<span class="'+(v>0?'growth-pos':v<0?'growth-neg':'growth-na')+'">'+fmtPct(v)+'</span>';
+}
+function renderFinancialAnalysis(rs,years){
+  var rows=[['매출액','enpSaleAmt'],['영업이익','enpBzopPft'],['당기순이익','enpCrtmNpf']];
+  var htmlStr='<table class="analysis-table"><thead><tr><th>지표</th><th>전년 대비</th></tr></thead><tbody>';
+  rows.forEach(function(row){var a=n(rs[4],row[1]),b=n(rs[3],row[1]);htmlStr+='<tr><td>'+row[0]+'</td><td>'+growthText(growthRate(a,b))+'</td></tr>';});
+  htmlStr+='</tbody></table><p class="sub" style="margin:10px 0 0">비교 기준: '+(years[3]||'')+'년 → '+years[4]+'년</p>';
+  $('growthAnalysis').innerHTML=htmlStr;
+  var c=rs[4]||{},pv=rs[3]||{};
+  var sales=n(c,'enpSaleAmt'),op=n(c,'enpBzopPft'),np=n(c,'enpCrtmNpf'),assets=n(c,'enpTastAmt'),debt=n(c,'enpTdbtAmt'),equity=n(c,'enpTcptAmt');
+  var debtRatio=n(c,'fnclDebtRto');if(debtRatio===null)debtRatio=pct(debt,equity);
+  var opm=pct(op,sales),npm=pct(np,sales),roe=pct(np,equity),roa=pct(np,assets),equityRatio=pct(equity,assets);
+  var salesGrowth=growthRate(sales,n(pv,'enpSaleAmt'));
+  function rating(type,v){if(v===null||typeof v!=='number')return '<span class="analysis-pill">산출 불가</span>';
+    var good=false,warn=false;
+    if(type==='opm'||type==='npm'||type==='roe'||type==='roa') {good=v>=10;warn=v<0;}
+    else if(type==='debt'){good=v<=100;warn=v>200;}
+    else if(type==='equity'){good=v>=50;warn=v<20;}
+    else if(type==='growth'){good=v>0;warn=v<0;}
+    return '<span class="analysis-pill '+(good?'good':warn?'bad':'warn')+'">'+(good?'양호':warn?'주의':'보통')+'</span>';
+  }
+  var metrics=[['영업이익률',opm,'%', 'opm'],['순이익률',npm,'%','npm'],['ROE',roe,'%','roe'],['ROA',roa,'%','roa'],['부채비율',debtRatio,'%','debt'],['자기자본비율',equityRatio,'%','equity'],['매출액 증가율',salesGrowth,'%','growth']];
+  var h='<table class="analysis-table"><thead><tr><th>지표</th><th>계산값</th><th>참고 평가</th></tr></thead><tbody>';
+  metrics.forEach(function(m){var val=m[1],display=typeof val==='string'?val:(val===null?'-':val.toFixed(1)+m[2]);h+='<tr><td>'+m[0]+'</td><td>'+display+'</td><td>'+rating(m[3],val)+'</td></tr>';});
+  h+='</tbody></table><p class="sub" style="margin:10px 0 0">ROE·ROA는 당기순이익을 기말 자본·자산으로 나눈 단순 계산값입니다. 평가는 일반적인 참고 기준이며 투자 판단이나 업종 평균을 의미하지 않습니다.</p>';
+  $('healthAnalysis').innerHTML=h;
+}
+
+function render(corp,year,rs,years){
+  var c=rs[4],pv=rs[3];
+  if($('stmtYearSelect'))$('stmtYearSelect').value=String(year);
+  updateCurrentCompareButton();
+  var sale=n(c,'enpSaleAmt'),op=n(c,'enpBzopPft'),np=n(c,'enpCrtmNpf'),ta=n(c,'enpTastAmt'),td=n(c,'enpTdbtAmt'),tc=n(c,'enpTcptAmt');
+  var debt=n(c,'fnclDebtRto'); if(debt===null)debt=pct(td,tc);
+  var gs=gr(sale,n(pv,'enpSaleAmt')),go=gr(op,n(pv,'enpBzopPft'));
+  $('sumInfo').textContent=corp.name+' '+year+'년 '+(/연결/.test(c.fnclDcdNm||'')?'연결':'별도')+' 재무제표 기준';
+  set('sSale',won(sale));set('sOp',won(op));set('sNp',won(np));set('sDebt',p(debt));
+  html('nSale',gs===null?'&nbsp;':'전년 대비 <span class="'+cls(gs)+'">'+p(gs,1)+'</span>');
+  html('nOp',pct(op,sale)===null?'&nbsp;':'영업이익률 '+p(pct(op,sale)));
+  html('nNp',pct(np,sale)===null?'&nbsp;':'순이익률 '+p(pct(np,sale)));
+  html('nDebt',td===null?'&nbsp;':'부채 '+won(td)+' / 자본 '+won(tc));
+  set('m1','영업 '+p(pct(op,sale))+' / 순 '+p(pct(np,sale)));
+  set('m2','부채비율 '+p(debt)+' / 자기자본 '+p(pct(tc,ta)));
+  set('m3','매출 '+p(gs,1)+' / 영업이익 '+p(go,1));
+  set('m4',won(ta)+' / '+won(tc));
+  ['m1','m2','m3','m4'].forEach(function(i){$(i).classList.remove('na')});
+  renderFinancialAnalysis(rs,years);
+  
+  switchStmtTab('summary');
+  drawStatement(corp,year,rs,years);
+}
+var LABELS=[['enpRprFnm','대표자'],['enpEstbDt','설립일'],['corpRegMrktDcdNm','시장구분'],['sicNm','업종'],['enpEmpeCnt','직원 수'],['enpStacMm','결산월'],['smenpYn','중소기업 여부'],['crno','법인등록번호'],['bzno','사업자등록번호'],['enpBsadr','주소'],['enpHmpgUrl','홈페이지'],['actnAudpnNm','감사인'],['audtRptOpnnCtt','감사의견']];
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fdate(v){v=String(v);return /^\d{8}$/.test(v)?v.slice(0,4)+'.'+v.slice(4,6)+'.'+v.slice(6):v}
+function showInfo(corp,id){
+  var d=corp.info,listed=null,abol=null,rows=[];
+  Object.keys(d).forEach(function(k){
+    var v=d[k];if(v===''||v===null||v===undefined)return;
+    if(/Abol|Dlst/i.test(k)){abol=abol||k;rows.push([/Kosdaq/i.test(k)?'상장폐지일(코스닥)':/Konex/i.test(k)?'상장폐지일(코넥스)':'상장폐지일',fdate(v)])}
+    else if(/Lstg/i.test(k)){listed=listed||k;rows.push([/Kosdaq/i.test(k)?'상장일(코스닥)':/Konex/i.test(k)?'상장일(코넥스)':'상장일',fdate(v)])}
+  });
+  var base=[];
+  LABELS.forEach(function(l){var v=d[l[0]];if(v!==undefined&&v!==''&&v!==null)base.push([l[1],/Dt$/.test(l[0])?fdate(v):v])});
+  var all=base.concat(rows);
+  var badge=abol?'<span class="badge bad">상장폐지</span>':listed?'<span class="badge ok">상장</span>':'<span class="badge">비상장 또는 확인 불가</span>';
+  $('info').innerHTML='<div class="info-head"><h3>'+esc(corp.name)+'</h3>'+badge+'</div><dl class="kv">'
+    +all.map(function(r){return '<div><dt>'+r[0]+'</dt><dd>'+esc(r[1])+'</dd></div>'}).join('')
+    +'</dl>';
+}
+var STMT=[['매출액','enpSaleAmt'],['영업이익','enpBzopPft'],['법인세비용차감전순이익','iclsPalClcAmt'],['당기순이익','enpCrtmNpf'],['자산총계','enpTastAmt'],['부채총계','enpTdbtAmt'],['자본총계','enpTcptAmt'],['자본금','enpCptlAmt'],['부채비율','fnclDebtRto']];
+function stVal(x,k){
+  var v=n(x,k);
+  if(v===null&&k==='fnclDebtRto')v=pct(n(x,'enpTdbtAmt'),n(x,'enpTcptAmt'));
+  return v;
+}
+function drawStatement(corp,year,rs,years){
+  var rows=STMT.filter(function(r){return rs.some(function(x){return stVal(x,r[1])!==null})});
+  if(!rows.length){$('stmtBox').hidden=true;return}
+  var go=function(){
+    var S=2,W=1040,px=40,top=96,rh=46,lw=270,cw=(W-px*2-lw)/years.length,H=top+rh*(rows.length+1)+60;
+    var cv=document.createElement('canvas');cv.width=W*S;cv.height=H*S;
+    var c=cv.getContext('2d');c.scale(S,S);
+    var F='Pretendard,"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+    var ref=rs.filter(Boolean).pop(),basis=/연결/.test(ref.fnclDcdNm||'')?'연결':'별도';
+    c.fillStyle='#fff';c.fillRect(0,0,W,H);c.textBaseline='middle';
+    c.fillStyle='#16202e';c.font='700 24px '+F;c.textAlign='left';c.fillText(corp.name+' 요약 재무제표',px,44);
+    c.fillStyle='#5b6676';c.font='400 14px '+F;c.fillText(basis+' 기준, 단위: 억원 (부채비율은 %)',px,72);
+    c.fillStyle='#f3f6ff';c.fillRect(px+lw+cw*(years.length-1),top,cw,rh*(rows.length+1));
+    c.fillStyle='#f6f7f9';c.fillRect(px,top,W-px*2,rh);
+    c.fillStyle='#16202e';c.font='700 14px '+F;c.textAlign='left';c.fillText('항목',px+16,top+rh/2);
+    c.textAlign='right';
+    years.forEach(function(y,i){c.fillText(y+'년',px+lw+cw*(i+1)-16,top+rh/2)});
+    rows.forEach(function(r,ri){
+      var y=top+rh*(ri+1);
+      c.strokeStyle='#e1e5ea';c.beginPath();c.moveTo(px,y);c.lineTo(W-px,y);c.stroke();
+      c.textAlign='left';c.fillStyle='#5b6676';c.font='400 15px '+F;c.fillText(r[0],px+16,y+rh/2);
+      c.textAlign='right';c.fillStyle='#16202e';
+      years.forEach(function(yr,i){
+        var v=stVal(rs[i],r[1]);
+        var t=v===null?'-':r[1]==='fnclDebtRto'?v.toFixed(1)+'%':Math.round(v/1e8).toLocaleString('ko-KR');
+        c.fillStyle=v===null?'#8b95a3':'#16202e';
+        c.fillText(t,px+lw+cw*(i+1)-16,y+rh/2);
+      });
+    });
+    var yb=top+rh*(rows.length+1);
+    c.strokeStyle='#c9d0d9';c.beginPath();c.moveTo(px,yb);c.lineTo(W-px,yb);c.stroke();
+    c.textAlign='left';c.fillStyle='#8b95a3';c.font='400 12px '+F;c.fillText('출처: 금융위원회 기업 재무정보 (공공데이터포털)',px,H-26);
+    var url=cv.toDataURL('image/png');
+    $('stmtImg').src=url;$('stmtImg').alt=corp.name+' '+year+'년 요약 재무제표';
+    var a=$('stmtDl');a.href=url;a.download='재무제표_'+corp.name+'_'+year+'.png';
+    $('stmtBox').hidden=false;
+  };
+  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go);
+}
+
+async function changeStatementYear(value){
+  var year=Number(value);
+  if(!currentCorp||!year)return;
+  currentYear=year;
+  $('year').value=String(year);
+  updateCurrentCompareButton();
+  $('sumInfo').textContent=currentCorp.name+' '+year+'년 재무정보를 불러오는 중입니다...';
+  $('stmtDesc').textContent=year+'년 기준 재무제표를 불러오는 중입니다...';
+  var years=[];for(var i=4;i>=0;i--)years.push(year-i);
+  try{
+    var rs=await Promise.all(years.map(function(y){return getSumm(currentCorp.crno,y).catch(function(){return null})}));
+    if(!rs[4]){note(currentCorp.name+'의 '+year+'년 재무정보가 아직 제공되지 않습니다.',1);return;}
+    render(currentCorp,year,rs,years);
+    drawChart(rs,years);
+    note('');
+  }catch(e){note('연도 변경 중 오류가 발생했습니다: '+e.message,1)}
+}
+
+function switchStmtTab(type){
+  var btns = document.querySelectorAll('.stmt-tabs button');
+  btns.forEach(function(b){b.classList.remove('on')});
+  
+  var title = $('stmtTitle');
+  var desc = $('stmtDesc');
+  var imgWrap = $('stmtImgWrap');
+  var tableWrap = $('stmtTableWrap');
+  
+  if(type === 'summary'){
+    btns[0].classList.add('on');
+    title.textContent = '요약 재무제표';
+    desc.textContent = '선택한 연도를 포함한 5개년 요약 항목을 이미지로 만든 것입니다.';
+    imgWrap.hidden = false;
+    tableWrap.hidden = true;
+  } else if(type === 'bs'){
+    btns[1].classList.add('on');
+    title.textContent = '재무상태표';
+    desc.textContent = currentYear + '년 기준 재무상태표 세부 계정과목 목록입니다.';
+    imgWrap.hidden = true;
+    tableWrap.hidden = false;
+    loadDetailTable('bs');
+  } else if(type === 'pl'){
+    btns[2].classList.add('on');
+    title.textContent = '손익계산서';
+    desc.textContent = currentYear + '년 기준 손익계산서 세부 계정과목 목록입니다.';
+    imgWrap.hidden = true;
+    tableWrap.hidden = false;
+    loadDetailTable('pl');
+  }
+}
+
+async function loadDetailTable(type){
+  var tableWrap = $('stmtTableWrap');
+  tableWrap.innerHTML = '<p class="cap">상세 정보를 불러오는 중입니다...</p>';
+  
+  try {
+    var rawList = type === 'bs' 
+      ? await getBs(currentCorp.crno, currentYear) 
+      : await getIncoStat(currentCorp.crno, currentYear);
+      
+    if(!rawList || !rawList.length){
+      tableWrap.innerHTML = '<p class="cap">표시할 상세 재무정보가 없습니다.</p>';
+      return;
+    }
+    
+    var filterList = rawList.filter(function(x){return /연결/.test(x.fnclDcdNm||'')});
+    var listToUse = filterList.length ? filterList : rawList;
+    
+    var htmlStr = '<table class="detail-table"><thead><tr><th>계정과목 명칭</th><th>당기금액</th><th>전기금액</th></tr></thead><tbody>';
+    
+    listToUse.forEach(function(item){
+      var name = item.acitNm || item.acitId || '기타 항목';
+      var curVal = item.crtmAcitAmt !== undefined && item.crtmAcitAmt !== '' ? Number(item.crtmAcitAmt).toLocaleString('ko-KR') + '원' : '-';
+      var prvVal = item.pvtrAcitAmt !== undefined && item.pvtrAcitAmt !== '' ? Number(item.pvtrAcitAmt).toLocaleString('ko-KR') + '원' : '-';
+      
+      var isMajor = /총계|합계|이익|순이익|매출액/.test(name);
+      var rowStyle = isMajor ? 'class="sub-head"' : '';
+      
+      htmlStr += '<tr '+rowStyle+'><td>'+esc(name)+'</td><td><b>'+curVal+'</b></td><td>'+prvVal+'</td></tr>';
+    });
+    
+    htmlStr += '</tbody></table>';
+    tableWrap.innerHTML = htmlStr;
+  } catch(e) {
+    tableWrap.innerHTML = '<p class="cap" style="color:var(--neg)">상세 재무 정보를 가져오는 중 오류가 발생했습니다: '+esc(e.message)+'</p>';
+  }
+}
+
+function clearAll(){$('stmtBox').hidden=true;
+  ['sSale','sOp','sNp','sDebt','m1','m2','m3','m4'].forEach(function(i){set(i,'-')});
+  ['nSale','nOp','nNp','nDebt'].forEach(function(i){html(i,'&nbsp;')});
+}
+
+
+function sortCompareSelections(){
+  var rows=$('compareSelections');
+  Array.from(rows.querySelectorAll('.compare-selection')).map(function(row,index){
+    return {row:row,index:index,year:Number(row.querySelector('.cmp-year').value)};
+  }).sort(function(a,b){return a.year-b.year||a.index-b.index;}).forEach(function(item){rows.appendChild(item.row)});
+}
+function addCompareSelection(name,year){
+  var rows=$('compareSelections');
+  if(rows.children.length>=4){$('compareNotice').textContent='비교는 최대 4개 항목까지 가능합니다.';return}
+  var y=year||$('year').value||'2024',div=document.createElement('div');
+  div.className='compare-selection';
+  div.innerHTML='<input class="cmp-company" type="text" readonly tabindex="-1" aria-readonly="true" aria-label="비교 기업" value="'+esc(name||'')+'">'
+    +'<select class="cmp-year" aria-label="비교 연도">'+[2025,2024,2023,2022,2021].map(function(v){return '<option value="'+v+'" '+(String(v)===String(y)?'selected':'')+'>'+v+'</option>'}).join('')
+    +'</select><button type="button" class="cmp-remove" onclick="removeCompareSelection(this)">삭제</button>';
+  rows.appendChild(div);sortCompareSelections();updateCompareControls();
+}
+function getCurrentCompareRow(){
+  if(!currentCorp)return null;
+  var rows=$('compareSelections'),year=String(currentYear||$('year').value||'2025');
+  return Array.from(rows.querySelectorAll('.compare-selection')).find(function(row){
+    return row.querySelector('.cmp-company').value.trim().toLowerCase()===String(currentCorp.name).toLowerCase()
+      && row.querySelector('.cmp-year').value===year;
+  })||null;
+}
+function updateCurrentCompareButton(){
+  var btn=$('addCurrentCompareBtn');if(!btn)return;
+  var added=!!getCurrentCompareRow();
+  btn.textContent=added?'비교함 삭제':'+ 비교함에 담기';
+  btn.classList.toggle('is-added',added);
+  btn.setAttribute('aria-pressed',added?'true':'false');
+}
+function toggleCurrentCompare(){
+  if(!currentCorp){note('먼저 기업을 조회해 주세요.',1);return}
+  var row=getCurrentCompareRow(),year=String(currentYear||$('year').value||'2025');
+  if(row){row.remove();updateCompareControls();updateCurrentCompareButton();showCompareAddedFeedback(currentCorp.name+' '+year+'년을 비교함에서 삭제했습니다.');return;}
+  var rows=$('compareSelections');
+  if(rows.children.length>=4){showCompareAddedFeedback('비교함은 최대 4개 항목까지 가능합니다.');return;}
+  addCompareSelection(currentCorp.name,year);
+  updateCurrentCompareButton();
+  showCompareAddedFeedback(currentCorp.name+' '+year+'년을 비교함에 담았습니다.');
+}
+var compareFeedbackTimer=null;
+function showCompareAddedFeedback(message){
+  var el=$('compareAddedFeedback');if(!el)return;
+  clearTimeout(compareFeedbackTimer);
+  var match=String(message||'').match(/^(.+?) (\d{4}년)을 (비교함에 담았습니다|비교함에서 삭제했습니다)\.$/);
+  if(match){
+    el.innerHTML='<span class="feedback-company-year">'+esc(match[1]+' '+match[2])+'</span><span class="feedback-action">'+(match[3]==='비교함에 담았습니다'?'비교함에 담았습니다.':'비교함에서 삭제했습니다.')+'</span>';
+  }else{
+    el.textContent=message||'';
+  }
+  el.classList.toggle('show',!!message);
+  if(message)compareFeedbackTimer=setTimeout(function(){el.classList.remove('show');},2600);
+}
+function removeCompareSelection(btn){
+  btn.closest('.compare-selection').remove();updateCompareControls();
+}
+function updateCompareControls(){
+  var rows=$('compareSelections');
+  Array.from(rows.querySelectorAll('.cmp-remove')).forEach(function(b){b.disabled=false});
+}
+function metricValues(a,b){
+  if(!a)return null;
+  var sale=n(a,'enpSaleAmt'),op=n(a,'enpBzopPft'),np=n(a,'enpCrtmNpf'),debt=n(a,'fnclDebtRto');
+  if(debt===null)debt=pct(n(a,'enpTdbtAmt'),n(a,'enpTcptAmt'));
+  return [won(sale),p(gr(sale,n(b,'enpSaleAmt')),1),p(pct(op,sale)),p(pct(np,sale)),p(debt),p(pct(np,n(a,'enpTcptAmt')))];
+}
+function metricRawValues(a,b){
+  if(!a)return null;
+  var sale=n(a,'enpSaleAmt'),op=n(a,'enpBzopPft'),np=n(a,'enpCrtmNpf'),debt=n(a,'fnclDebtRto');
+  if(debt===null)debt=pct(n(a,'enpTdbtAmt'),n(a,'enpTcptAmt'));
+  return [sale,gr(sale,n(b,'enpSaleAmt')),pct(op,sale),pct(np,sale),debt,pct(np,n(a,'enpTcptAmt'))];
+}
+var comparisonChartResults=[];
+var activeComparisonChart='performance';
+var chartColors=['#315bd6','#16a085','#e09a35','#8765c5'];
+function chartPointLabel(r){return r.corp.name+' '+r.selection.year+'년';}
+function chartValue(r,key){
+  if(key==='sales')return n(r.current,'enpSaleAmt')===null?null:n(r.current,'enpSaleAmt')/1e12;
+  if(key==='op')return n(r.current,'enpBzopPft')===null?null:n(r.current,'enpBzopPft')/1e12;
+  if(key==='net')return n(r.current,'enpCrtmNpf')===null?null:n(r.current,'enpCrtmNpf')/1e12;
+  if(key==='opm')return pct(n(r.current,'enpBzopPft'),n(r.current,'enpSaleAmt'));
+  if(key==='npm')return pct(n(r.current,'enpCrtmNpf'),n(r.current,'enpSaleAmt'));
+  if(key==='debt'){var d=n(r.current,'fnclDebtRto');return d===null?pct(n(r.current,'enpTdbtAmt'),n(r.current,'enpTcptAmt')):d;}
+  if(key==='roe')return pct(n(r.current,'enpCrtmNpf'),n(r.current,'enpTcptAmt'));
+  return null;
+}
+function shortCompany(name){return name.length>9?name.slice(0,8)+'…':name;}
+function renderSmallBarChart(rows,metric,title,unit){
+  var W=900,H=150,L=86,R=24,T=27,B=36,pw=W-L-R,ph=H-T-B;
+  var vals=rows.map(function(r){return chartValue(r,metric);}).filter(function(v){return v!==null&&isFinite(v);});
+  if(!vals.length)return '<div class="compare-chart-empty">'+title+' 데이터가 없습니다.</div>';
+  var lo=Math.min(0,Math.min.apply(null,vals)),hi=Math.max(0,Math.max.apply(null,vals));if(lo===hi){hi+=1;lo-=1;}var pad=(hi-lo)*.1;lo-=pad;hi+=pad;
+  var y=function(v){return T+(hi-v)/(hi-lo)*ph;},zero=y(0),step=pw/rows.length,bw=Math.min(54,step*.48);
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+title+' 비교 그래프">';
+  [0,.5,1].forEach(function(t){var v=lo+(hi-lo)*t,yy=y(v);svg+='<line x1="'+L+'" y1="'+yy+'" x2="'+(W-R)+'" y2="'+yy+'" stroke="#e8ebf0"/><text x="'+(L-9)+'" y="'+(yy+4)+'" text-anchor="end">'+v.toFixed(1)+'</text>';});
+  rows.forEach(function(r,i){var v=chartValue(r,metric);if(v===null||!isFinite(v))return;var x=L+step*(i+.5),yy=y(v),top=Math.min(yy,zero),h=Math.max(2,Math.abs(zero-yy));svg+='<rect x="'+(x-bw/2)+'" y="'+top+'" width="'+bw+'" height="'+h+'" rx="3" fill="'+chartColors[i%4]+'"><title>'+esc(chartPointLabel(r))+': '+v.toFixed(2)+' '+unit+'</title></rect><text x="'+x+'" y="'+(v>=0?Math.max(14,top-5):top+h+14)+'" text-anchor="middle">'+v.toFixed(1)+'</text><text x="'+x+'" y="'+(H-10)+'" text-anchor="middle">'+esc(shortCompany(r.corp.name))+' '+r.selection.year+'</text>';});
+  return '<div class="compare-mini-chart"><strong>'+title+'</strong><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+title+' 비교 그래프">'+svg.slice(svg.indexOf('>')+1)+'</svg></div>';
+}
+function renderProfitability(rows){
+  var metrics=[{key:'opm',label:'영업이익률',color:'#315bd6'},{key:'npm',label:'순이익률',color:'#16a085'},{key:'roe',label:'ROE',color:'#e09a35'}];
+  var vals=[];rows.forEach(function(r){metrics.forEach(function(m){var v=chartValue(r,m.key);if(v!==null&&isFinite(v))vals.push(v);});});
+  if(!vals.length)return '<div class="compare-chart-empty">수익성 데이터가 없습니다.</div>';
+  var lo=Math.min(0,Math.min.apply(null,vals)),hi=Math.max(0,Math.max.apply(null,vals));if(lo===hi){hi+=1;lo-=1;}var pad=(hi-lo)*.12;lo-=pad;hi+=pad;
+  var W=900,H=330,L=72,R=24,T=28,B=86,pw=W-L-R,ph=H-T-B,step=pw/Math.max(rows.length-1,1),y=function(v){return T+(hi-v)/(hi-lo)*ph;};
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="수익성 지표 비교 그래프">';
+  for(var g=0;g<=4;g++){var v=lo+(hi-lo)*g/4,yy=y(v);svg+='<line x1="'+L+'" y1="'+yy+'" x2="'+(W-R)+'" y2="'+yy+'" stroke="#e8ebf0"/><text x="'+(L-9)+'" y="'+(yy+4)+'" text-anchor="end">'+v.toFixed(1)+'%</text>';}
+  metrics.forEach(function(m,mi){rows.forEach(function(r,i){var v=chartValue(r,m.key);if(v!==null&&isFinite(v)){var x=(rows.length===1?L+pw/2:L+i*step)+(mi-1)*7,yy=y(v);svg+='<circle cx="'+x+'" cy="'+yy+'" r="5" fill="'+m.color+'"><title>'+esc(chartPointLabel(r))+' · '+m.label+': '+v.toFixed(2)+'%</title></circle>';}});});
+  rows.forEach(function(r,i){var x=rows.length===1?L+pw/2:L+i*step;svg+='<text x="'+x+'" y="'+(H-46)+'" text-anchor="middle">'+esc(shortCompany(r.corp.name))+'</text><text x="'+x+'" y="'+(H-25)+'" text-anchor="middle">'+r.selection.year+'년</text>';});svg+='</svg>';
+  return svg+'<div class="compare-chart-legend">'+metrics.map(function(m){return '<span><i style="background:'+m.color+'"></i>'+m.label+'</span>';}).join('')+'</div>';
+}
+function renderStability(rows){
+  var vals=rows.map(function(r){return {r:r,v:chartValue(r,'debt')};}).filter(function(x){return x.v!==null&&isFinite(x.v);});if(!vals.length)return '<div class="compare-chart-empty">부채비율 데이터가 없습니다.</div>';
+  var max=Math.max(100,Math.max.apply(null,vals.map(function(x){return x.v;}))*1.12),W=900,rowH=58,H=70+vals.length*rowH,L=160,R=90,barW=W-L-R;
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="부채비율 비교 그래프">';
+  [0,.25,.5,.75,1].forEach(function(t){var x=L+barW*t;svg+='<line x1="'+x+'" y1="28" x2="'+x+'" y2="'+(H-20)+'" stroke="#e8ebf0"/><text x="'+x+'" y="18" text-anchor="middle">'+(max*t).toFixed(0)+'%</text>';});
+  vals.forEach(function(o,i){var y=43+i*rowH,w=Math.max(2,barW*o.v/max);svg+='<text x="'+(L-12)+'" y="'+(y+19)+'" text-anchor="end">'+esc(chartPointLabel(o.r))+'</text><rect x="'+L+'" y="'+y+'" width="'+w+'" height="27" rx="4" fill="'+chartColors[i%4]+'"/><text x="'+(L+w+9)+'" y="'+(y+19)+'">'+o.v.toFixed(1)+'%</text>';});svg+='</svg>';return svg+'<p class="cap" style="margin:8px 0 0">부채비율은 낮을수록 일반적으로 재무 부담이 작습니다. 업종별 특성도 함께 고려하세요.</p>';
+}
+function renderMetricCard(rows,metric,title,unit,lowerIsBetter){
+  var vals=rows.map(function(r){return {r:r,v:chartValue(r,metric)};}).filter(function(x){return x.v!==null&&isFinite(x.v);});
+  if(!vals.length)return '<div class="compare-metric-card"><strong>'+title+'</strong><div class="compare-chart-empty">데이터가 없습니다.</div></div>';
+  var maxAbs=Math.max.apply(null,vals.map(function(x){return Math.abs(x.v)}));if(!maxAbs)maxAbs=1;
+  var hasNegative=vals.some(function(x){return x.v<0;});
+  var W=1000,rowH=46,H=42+vals.length*rowH,L=260,R=105,barW=W-L-R;
+  var zeroX=hasNegative?L+barW*.38:L;
+  var positiveW=hasNegative?barW*.62:barW;
+  var negativeW=hasNegative?barW*.38:0;
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+title+' 기업별 비교">';
+  svg+='<line x1="'+zeroX+'" y1="24" x2="'+zeroX+'" y2="'+(H-8)+'" stroke="#cbd5e1" stroke-dasharray="3 4"/>';
+  vals.forEach(function(o,i){
+    var y=30+i*rowH, v=o.v, color=chartColors[rows.indexOf(o.r)%4];
+    var label=chartPointLabel(o.r), display=(v<0?'−':'')+Math.abs(v).toLocaleString('ko-KR',{maximumFractionDigits:1})+' '+unit;
+    var w=v>=0?(v/maxAbs)*positiveW:(Math.abs(v)/maxAbs)*negativeW;
+    var x=v>=0?zeroX:zeroX-w;
+    svg+='<text x="8" y="'+(y+14)+'" fill="#334155" font-size="14" font-weight="600">'+esc(label)+'</text>';
+    svg+='<rect x="'+L+'" y="'+(y+1)+'" width="'+barW+'" height="17" rx="5" fill="#f1f4f8"/>';
+    if(hasNegative && v>=0)svg+='<rect x="'+zeroX+'" y="'+(y+1)+'" width="'+w+'" height="17" rx="4" fill="'+color+'"/>';
+    else if(hasNegative)svg+='<rect x="'+x+'" y="'+(y+1)+'" width="'+w+'" height="17" rx="4" fill="'+color+'"/>';
+    else svg+='<rect x="'+L+'" y="'+(y+1)+'" width="'+w+'" height="17" rx="4" fill="'+color+'"/>';
+    svg+='<text x="'+(W-8)+'" y="'+(y+15)+'" text-anchor="end" fill="#26364d" font-size="14" font-weight="700">'+display+'</text>';
+    if(i<vals.length-1)svg+='<line x1="8" y1="'+(y+rowH-5)+'" x2="'+(W-8)+'" y2="'+(y+rowH-5)+'" stroke="#edf0f4"/>';
+  });
+  svg+='</svg>';
+  return '<div class="compare-metric-card"><div class="compare-metric-heading"><strong>'+title+'</strong><span>'+ (hasNegative?'0 기준 · 적자/흑자 방향 표시':'최댓값 기준 상대 크기') +'</span></div>'+svg+'</div>';
+}
+function renderComparisonChart(){
+  var host=$('compareChart'),rows=comparisonChartResults.slice();
+  if(!rows.length){host.innerHTML='<div class="compare-chart-empty">기업을 비교하면 그래프가 표시됩니다.</div>';return;}
+  var groups=[];
+  if(activeComparisonChart==='performance')groups=[{key:'sales',label:'매출액',unit:'조원'},{key:'op',label:'영업이익',unit:'조원'},{key:'net',label:'당기순이익',unit:'조원'}];
+  else if(activeComparisonChart==='profitability')groups=[{key:'opm',label:'영업이익률',unit:'%'},{key:'npm',label:'순이익률',unit:'%'},{key:'roe',label:'ROE',unit:'%'}];
+  else groups=[{key:'debt',label:'부채비율',unit:'%'}];
+  host.innerHTML=groups.map(function(g){return renderMetricCard(rows,g.key,g.label,g.unit,g.key==='debt');}).join('')+
+    '<div class="compare-chart-footnote">막대 길이는 같은 지표 안에서 비교한 상대 크기이며, 오른쪽에 실제 수치를 함께 표시합니다. 서로 다른 업종은 사업 구조와 업종 평균도 함께 고려하세요.</div>';
+}
+
+function compareDelta(value,base,baseYear){
+  if(value===null||base===null||base===0||!isFinite(value)||!isFinite(base))return '';
+  var change=(value-base)/Math.abs(base)*100;
+  if(!isFinite(change))return '';
+  var sign=change>0?'+':'';
+  var arrow=change>0?'▲':change<0?'▼':'–';
+  var clsName=change>0?'up':change<0?'down':'';
+  return '<small class="cmp-delta '+clsName+'">'+arrow+' '+sign+change.toFixed(1)+'% <em>vs '+baseYear+'년</em></small>';
+}
+async function runCustomCompare(){
+  var rows=Array.from($('compareSelections').querySelectorAll('.compare-selection'));
+  var selections=rows.map(function(row,index){return {name:row.querySelector('.cmp-company').value.trim(),year:Number(row.querySelector('.cmp-year').value),index:index}})
+    .sort(function(a,b){return a.year-b.year||a.index-b.index;});
+  if(!selections.length){$('compareNotice').textContent='비교할 기업이 없습니다. 메인 화면에서 기업을 조회한 뒤 ‘비교함에 담기’를 눌러주세요.';return}
+  if(selections.some(function(x){return !x.name})){$('compareNotice').textContent='기업 조회 화면에서 비교함에 기업을 추가해 주세요.';return}
+  $('compareNotice').textContent='기업 및 재무정보를 불러오는 중입니다...';$('cmpInfo').textContent='조회 중';
+  try{
+    var results=await Promise.all(selections.map(async function(s){
+      var corp=await findCorp(s.name),pair=await Promise.all([getSumm(corp.crno,s.year),getSumm(corp.crno,s.year-1)]);
+      return {selection:s,corp:corp,current:pair[0],previous:pair[1]};
+    }));
+    var labels=['매출액','매출 성장률','영업이익률','순이익률','부채비율','ROE'];
+    $('cmpHead').innerHTML='<tr><th>항목</th>'+results.map(function(r){return '<th>'+esc(r.corp.name)+'<br>'+r.selection.year+'년</th>'}).join('')+'</tr>';
+    $('cmpBody').innerHTML=labels.map(function(label,i){
+      return '<tr><td>'+label+'</td>'+results.map(function(r,index){
+        var vals=metricValues(r.current,r.previous),raw=metricRawValues(r.current,r.previous),delta='';
+        if(raw){
+          // 같은 기업의 선택된 연도 중 현재 연도보다 낮은 가장 가까운 연도만 기준으로 사용
+          var peers=results.map(function(other,j){return {item:other,index:j,raw:metricRawValues(other.current,other.previous)}})
+            .filter(function(peer){return peer.index!==index&&peer.item.corp.crno===r.corp.crno&&peer.item.selection.year<r.selection.year&&peer.raw;})
+            .sort(function(a,b){return b.item.selection.year-a.item.selection.year;});
+          // 가장 오래된 선택 연도에는 비교 기준을 표시하지 않음
+          if(peers.length)delta=compareDelta(raw[i],peers[0].raw[i],peers[0].item.selection.year);
+        }
+        return '<td>'+(vals?vals[i]:'자료 없음')+delta+'</td>';
+      }).join('')+'</tr>';
+    }).join('');
+    comparisonChartResults=results;
+    renderComparisonChart();
+    $('cmpInfo').textContent=results.length+'개 항목 비교';
+    $('compareNotice').textContent='비교 결과를 불러왔습니다. 데이터가 없는 연도는 “자료 없음”으로 표시됩니다.';
+  }catch(e){$('compareNotice').textContent='비교 중 오류가 발생했습니다: '+e.message;$('cmpInfo').textContent='조회 실패'}
+}
+
+
+async function searchCompany(){
+  var name=$('company').value.trim(),year=+$('year').value,id=++seq;
+  if(!name){note('기업명 또는 번호를 입력해 주세요.',1);return}
+  hideAutocomplete();
+  note('조회 중입니다...');$('cmpSec').hidden=true;
+  try{
+    var corp=await findCorp(name),years=[],err=null;
+    if(id!==seq)return;
+
+    currentCorp=corp;
+    currentYear=year;
+    if($('stmtYearSelect'))$('stmtYearSelect').value=String(year);
+
+    showInfo(corp,id);
+    $('results').hidden=true;addRecent(corp.name);
+    for(var i=4;i>=0;i--)years.push(year-i);
+    var rs=await Promise.all(years.map(function(y){
+      return getSumm(corp.crno,y).catch(function(e){err=err||e;return null});
+    }));
+    if(id!==seq)return;
+    drawChart(rs,years);
+    if(!rs[4]){
+      clearAll();$('sumInfo').textContent=corp.name+' '+year+'년';
+      note(err?err.message:corp.name+'의 '+year+'년 재무정보가 아직 제공되지 않습니다. 다른 연도를 선택해 보세요.',1);
+    }else{
+      render(corp,year,rs,years);
+      note('');
+    }
+    // 조회와 재무 데이터 로딩이 끝난 뒤 기업 재무정보 화면으로 이동
+    document.querySelectorAll('.nav a').forEach(function(a){
+      a.classList.toggle('on',a.getAttribute('data-go')==='fin');
+    });
+    showFinancePage();
+  }catch(e){
+    if(id!==seq)return;
+    clearAll();
+    $('info').innerHTML='<p class="cap" style="margin:0">기업 정보를 불러오지 못했습니다.</p>';
+    note(e instanceof TypeError
+      ? 'API 요청이 브라우저에서 차단되었습니다(CORS). 파일을 웹 호스팅하거나 프록시 주소를 설정해야 합니다.'
+      : e.message,1);
+  }
+}
+
+var autoIndex = -1;
+var autoDebounceTimer = null;
+
+function hideAutocomplete(){
+  var ul = $('autocompleteList');
+  ul.style.display = 'none';
+  ul.innerHTML = '';
+  autoIndex = -1;
+}
+
+function renderAutocomplete(list){
+  var ul = $('autocompleteList');
+  if(!list || !list.length){
+    hideAutocomplete();
+    return;
+  }
+  
+  var uniqueList = [];
+  var seen = new Set();
+  list.forEach(function(item){
+    if(!seen.has(item.corpNm)){
+      seen.add(item.corpNm);
+      uniqueList.push(item);
+    }
+  });
+
+  ul.innerHTML = uniqueList.map(function(item, idx){
+    var sic = item.sicNm ? '<span class="stock-code">'+esc(item.sicNm)+'</span>' : '';
+    return '<li data-name="'+esc(item.corpNm)+'" data-idx="'+idx+'"><span>'+esc(item.corpNm)+'</span>'+sic+'</li>';
+  }).join('');
+
+  ul.style.display = 'block';
+  autoIndex = -1;
+}
+
+$('company').addEventListener('input', function(e){
+  var val = e.target.value.trim();
+  clearTimeout(autoDebounceTimer);
+  
+  if(!val || /^\d+$/.test(val)){
+    hideAutocomplete();
+    return;
+  }
+
+  autoDebounceTimer = setTimeout(function(){
+    api('/GetCorpBasicInfoService_V2/getCorpOutline_V2', {corpNm: val, numOfRows: 10})
+      .then(function(body){
+        var list = items(body);
+        renderAutocomplete(list);
+      })
+      .catch(function(){
+        hideAutocomplete();
+      });
+  }, 200);
+});
+
+$('company').addEventListener('keydown', function(e){
+  var ul = $('autocompleteList');
+  var itemsList = ul.querySelectorAll('li');
+  
+  if(ul.style.display === 'block' && itemsList.length > 0){
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      autoIndex = Math.min(autoIndex + 1, itemsList.length - 1);
+      updateAutoActive(itemsList);
+      return;
+    } else if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      autoIndex = Math.max(autoIndex - 1, -1);
+      updateAutoActive(itemsList);
+      return;
+    } else if(e.key === 'Enter'){
+      if(autoIndex > -1 && itemsList[autoIndex]){
+        e.preventDefault();
+        pick(itemsList[autoIndex].getAttribute('data-name'));
+        return;
+      }
+    } else if(e.key === 'Escape'){
+      hideAutocomplete();
+      return;
+    }
+  }
+
+  if(e.key === 'Enter'){
+    searchCompany();
+  }
+});
+
+function updateAutoActive(itemsList){
+  itemsList.forEach(function(el, idx){
+    if(idx === autoIndex){
+      el.classList.add('active');
+      $('company').value = el.getAttribute('data-name');
+      el.scrollIntoView({block: 'nearest'});
+    } else {
+      el.classList.remove('active');
+    }
+  });
+}
+
+$('autocompleteList').addEventListener('click', function(e){
+  var li = e.target.closest('li');
+  if(li){
+    var name = li.getAttribute('data-name');
+    if(name) pick(name);
+  }
+});
+
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.search-box')){
+    hideAutocomplete();
+  }
+});
+
+document.querySelectorAll('.nav a').forEach(function(a){
+  a.addEventListener('click',function(e){
+    e.preventDefault();
+    document.querySelectorAll('.nav a').forEach(function(x){x.classList.remove('on')});
+    a.classList.add('on');
+    var go=a.getAttribute('data-go');
+    var scroll=function(id){var el=id==='top'?document.body:$(id);el.scrollIntoView({behavior:'smooth',block:id==='top'?'start':'start'})};
+    if(go==='top'){showDashboard();}
+    else if(go==='fin'){
+      showFinancePage();
+    }
+    else if(go==='guide'){
+      $('heroPage').hidden=true;$('results').hidden=true;$('cmpSec').hidden=true;
+      $('guide').hidden=false;window.scrollTo({top:0,behavior:'smooth'});
+    }
+    else if(go==='cmp'){showComparePage();}
+  });
+});
+var RK='finview_recent';
+function getRecent(){try{return JSON.parse(localStorage.getItem(RK))||[]}catch(e){return []}}
+function renderRecent(l){
+  l=l||getRecent();
+  $('recentRow').hidden=!l.length;
+  $('recentList').innerHTML=l.map(function(n){return '<button type="button" class="chip" data-n="'+esc(n)+'">'+esc(n)+'</button>'}).join('');
+}
+function addRecent(n){
+  var l=getRecent().filter(function(x){return x!==n});l.unshift(n);l=l.slice(0,5);
+  try{localStorage.setItem(RK,JSON.stringify(l))}catch(e){}
+  renderRecent(l);
+}
+function clearRecent(){try{localStorage.removeItem(RK)}catch(e){}renderRecent([])}
+$('recentList').addEventListener('click',function(e){var n=e.target.getAttribute&&e.target.getAttribute('data-n');if(n)pick(n)});
+$('year').addEventListener('change',function(){if(!$('results').hidden&&$('company').value.trim())searchCompany()});
+$('compareSelections').addEventListener('change',function(e){if(e.target.classList.contains('cmp-year'))sortCompareSelections()});
+$('compareChartTabs').addEventListener('click',function(e){var b=e.target.closest('button[data-chart]');if(!b)return;activeComparisonChart=b.getAttribute('data-chart');$('compareChartTabs').querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b)});renderComparisonChart()});
+renderRecent();
+updateCompareControls();
+</script>
+
+<div class="chart-lightbox" id="chartLightbox" role="dialog" aria-modal="true" aria-label="그래프 크게 보기" onclick="if(event.target===this)closeChartImage()">
+  <div class="chart-lightbox-dialog">
+    <button type="button" class="chart-lightbox-close" aria-label="닫기" onclick="closeChartImage()">×</button>
+    <h2 class="chart-lightbox-title" id="chartLightboxTitle">그래프</h2>
+    <div class="chart-lightbox-content" id="chartLightboxContent"></div>
+    <p class="chart-lightbox-hint">바깥 영역을 클릭하거나 ESC 키를 누르면 닫힙니다.</p>
+  </div>
+</div>
+<script>
+function openChartImage(panel){
+  var source=panel.querySelector('svg');
+  if(!source)return;
+  var title=panel.querySelector('.main-metric-title strong');
+  var clone=source.cloneNode(true);
+  clone.removeAttribute('width');clone.removeAttribute('height');
+  $('chartLightboxTitle').textContent=(title?title.textContent:'재무 추이')+' 추이';
+  $('chartLightboxContent').innerHTML='';
+  $('chartLightboxContent').appendChild(clone);
+  $('chartLightbox').classList.add('open');
+  document.body.style.overflow='hidden';
+  $('chartLightbox').querySelector('button').focus();
+}
+function closeChartImage(){
+  var box=$('chartLightbox');if(!box)return;
+  box.classList.remove('open');document.body.style.overflow='';
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeChartImage()});
+
+
+/* 상담 신청 단계형 폼 */
+var contactState={step:1,purpose:'',phone:'',inquiry:'',email:''};
+var CONTACT_ENDPOINT='https://formsubmit.co/ajax/seungmin050111@gmail.com';
+function openContact(){
+  contactState={step:1,purpose:'',phone:'',inquiry:'',email:''};
+  $('contactOverlay').classList.add('open');$('contactOverlay').setAttribute('aria-hidden','false');
+  document.body.style.overflow='hidden';renderContactStep();
+}
+function closeContact(){
+  var el=$('contactOverlay');if(!el)return;
+  el.classList.remove('open');el.setAttribute('aria-hidden','true');document.body.style.overflow='';
+}
+function renderContactStep(){
+  var step=contactState.step;
+  $('contactProgressBar').style.width=(step/4*100)+'%';
+  $('contactStepLabel').textContent='STEP 0'+step+' / 04';
+  $('contactStatus').textContent='';
+  var body='',title='',desc='',actions='';
+  if(step===1){
+    title='어떤 상담이 필요하신가요?';desc='문의 목적을 선택해 주세요. 선택하신 내용에 맞춰 확인하겠습니다.';
+    var opts=[['세무회계상담','🧾','세무·회계 관련 질문 및 상담'],['사이트기능상담','💻','FINVIEW 사용법과 기능 개선 의견'],['그 외 문의','💬','기타 제안이나 협업 문의']];
+    body='<div class="contact-options">'+opts.map(function(o){return '<button type="button" class="contact-option '+(contactState.purpose===o[0]?'selected':'')+'" onclick="selectContactPurpose(\''+o[0]+'\')"><span class="contact-option-icon">'+o[1]+'</span><span><strong>'+o[0]+'</strong><small>'+o[2]+'</small></span><span class="contact-check">✓</span></button>'}).join('')+'</div>';
+    actions='<button type="button" class="contact-primary" '+(!contactState.purpose?'disabled':'')+' onclick="nextContactStep()">다음</button>';
+  }else if(step===2){
+    title='문의 내용을 입력해 주세요';desc='어떤 점이 궁금하신지 자세히 적어주시면 더 정확하게 답변드릴 수 있습니다. 입력은 선택 사항입니다.';
+    body='<label class="contact-field" for="contactInquiry">문의 내용 <span style="font-weight:400;color:#98a2b3">(선택)</span></label><textarea class="contact-textarea" id="contactInquiry" maxlength="3000" placeholder="문의하실 내용을 자유롭게 작성해 주세요.">'+escapeContactHtml(contactState.inquiry)+'</textarea><p class="contact-help">최대 3,000자까지 입력할 수 있으며, 작성하지 않고 건너뛸 수 있습니다.</p>';
+    actions='<button type="button" class="contact-secondary" onclick="skipContactInquiry()">건너뛰기</button><button type="button" class="contact-primary" onclick="saveContactInquiryAndNext()">다음</button>';
+  }else if(step===3){
+    title='연락받을 전화번호가 있나요?';desc='전화 상담이 필요하다면 번호를 입력해 주세요. 입력하지 않고 건너뛸 수 있습니다.';
+    body='<label class="contact-field" for="contactPhone">휴대폰 번호 <span style="font-weight:400;color:#98a2b3">(선택)</span></label><input class="contact-input" id="contactPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="010-1234-5678" value="'+escapeContactHtml(contactState.phone)+'"><p class="contact-help">전화번호는 상담 연락 목적으로만 전달됩니다.</p>';
+    actions='<button type="button" class="contact-secondary" onclick="skipContactPhone()">건너뛰기</button><button type="button" class="contact-primary" onclick="saveContactPhoneAndNext()">다음</button>';
+  }else{
+    title='답변받을 이메일을 알려주세요';desc='상담 내용을 확인한 뒤 답변을 보내드릴 이메일 주소를 입력해 주세요.';
+    body='<label class="contact-field" for="contactEmail">이메일 주소</label><input class="contact-input" id="contactEmail" type="email" autocomplete="email" placeholder="name@example.com" value="'+escapeContactHtml(contactState.email)+'"><div class="contact-summary"><div><span>문의 목적</span><strong>'+escapeContactHtml(contactState.purpose)+'</strong></div><div><span>전화번호</span><strong>'+(contactState.phone?escapeContactHtml(contactState.phone):'미입력')+'</strong></div><div><span>문의 내용</span><strong style="max-width:190px">'+(contactState.inquiry?escapeContactHtml(contactState.inquiry):'미입력')+'</strong></div><div><span>이메일</span><strong>입력 후 제출</strong></div></div><p class="contact-consent">제출 시 입력한 정보가 상담 답변 및 문의 처리 목적으로 운영자에게 이메일로 전달되는 것에 동의한 것으로 간주됩니다. 불필요한 개인정보는 입력하지 마세요.</p>';
+    actions='<button type="button" class="contact-secondary" onclick="prevContactStep()">이전</button><button type="button" class="contact-primary" id="contactSubmitBtn" onclick="submitContact()">확인 및 상담 신청</button>';
+  }
+  $('contactTitle').textContent=title;$('contactDesc').textContent=desc;$('contactStepBody').innerHTML=body;$('contactActions').innerHTML=actions;
+}
+function escapeContactHtml(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function selectContactPurpose(v){contactState.purpose=v;renderContactStep()}
+function nextContactStep(){if(!contactState.purpose)return;contactState.step=2;renderContactStep()}
+function saveContactPhoneAndNext(){var v=$('contactPhone').value.trim();if(v&&!/^[0-9+()\-\s]{8,20}$/.test(v)){$('contactStatus').textContent='전화번호 형식을 확인해 주세요.';return}contactState.phone=v;contactState.step=4;renderContactStep()}
+function skipContactPhone(){contactState.phone='';contactState.step=4;renderContactStep()}
+function saveContactInquiryAndNext(){contactState.inquiry=$('contactInquiry').value.trim();contactState.step=3;renderContactStep()}
+function skipContactInquiry(){contactState.inquiry='';contactState.step=3;renderContactStep()}
+function prevContactStep(){contactState.step=3;renderContactStep()}
+async function submitContact(){
+  var email=$('contactEmail').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){$('contactStatus').textContent='올바른 이메일 주소를 입력해 주세요.';$('contactEmail').focus();return}
+  contactState.email=email;
+  var btn=$('contactSubmitBtn');btn.disabled=true;btn.textContent='전송 중…';$('contactStatus').style.color='#64748b';$('contactStatus').textContent='상담 내용을 전송하고 있습니다.';
+  var payload={name:'FINVIEW 상담 신청',email:email,phone:contactState.phone||'미입력',purpose:contactState.purpose,inquiry:contactState.inquiry||'미입력',_subject:'[FINVIEW] 새 상담 신청 - '+contactState.purpose,_template:'table'};
+  try{
+    var response=await fetch(CONTACT_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});
+    var result=await response.json().catch(function(){return {success:'false',message:'응답을 확인할 수 없습니다.'}});
+    if(!response.ok||result.success===false||result.success==='false')throw new Error(result.message||'전송에 실패했습니다.');
+    $('contactStepLabel').textContent='SUBMITTED';$('contactProgressBar').style.width='100%';$('contactTitle').textContent='상담 신청이 접수되었습니다';$('contactDesc').textContent='문의해 주셔서 감사합니다. 확인 후 입력하신 이메일로 답변드리겠습니다.';$('contactStepBody').innerHTML='<div style="text-align:center;padding:38px 8px 24px"><div style="font-size:54px;margin-bottom:15px">✉️</div><strong style="font-size:15px;color:#172033">상담 신청 완료</strong><p style="font-size:12px;color:#8590a2;line-height:1.7">신청 내용이 운영자에게 전달되었습니다.</p></div>';$('contactStatus').textContent='';$('contactActions').innerHTML='<button type="button" class="contact-primary" onclick="closeContact()">닫기</button>';
+  }catch(err){
+    btn.disabled=false;btn.textContent='다시 시도';$('contactStatus').style.color='#b42318';$('contactStatus').textContent='전송하지 못했습니다. 잠시 후 다시 시도해 주세요. ('+(err.message||'네트워크 오류')+')';
+  }
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('contactOverlay')&&$('contactOverlay').classList.contains('open'))closeContact()});
+
+</script>
+</body>
+</html>
